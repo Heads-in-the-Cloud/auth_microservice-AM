@@ -40,7 +40,7 @@ public class AuthApplication {
         // redirect from old (http) port 8082 to secure (https) port 8443
         Connector connector = new Connector(TomcatServletWebServerFactory.DEFAULT_PROTOCOL);
         connector.setScheme("http");
-        connector.setPort(8083);
+        connector.setPort(8085);
         connector.setSecure(false);
         connector.setRedirectPort(8443);
         return connector;
