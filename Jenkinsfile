@@ -17,7 +17,7 @@ pipeline {
         }
         stage('Test') {
             steps {
-                echo 'Run container and test'
+                echo 'Run container and test - currently inactive'
             }
         }
         stage('Clean') {
