@@ -12,6 +12,7 @@ pipeline {
         stage('System information') {
             steps {
                 echo 'Debug info:'
+                sh 'test'
                 sh 'ls'
                 sh 'pwd'
             }
