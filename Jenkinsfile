@@ -9,13 +9,6 @@ pipeline {
     }
 
     stages {
-        stage('System information') {
-            steps {
-                echo 'Debug info:'
-                sh 'ls'
-                sh 'pwd'
-            }
-        }
         stage('AWS') {
             steps {
                 echo 'logging in via AWS client'
@@ -25,6 +18,7 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building Docker image'
+                sh 'docker context use default'
                 sh 'docker build -t ${repo_name} .'
             }
         }
