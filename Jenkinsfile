@@ -19,7 +19,7 @@ pipeline {
         }
         stage('Package') {
             steps {
-                echo 'Building Docker image'
+                echo 'Cleaning Maven package'
                 sh 'docker context use default'
                 sh 'mvn -f pom.xml clean package'
             }
@@ -36,7 +36,7 @@ pipeline {
                     """
                 }
                 timeout(time: 15, unit: 'MINUTES') {
-                sleep(10)
+                    sleep(10)
                     waitForQualityGate abortPipeline: true
                 }
             }
