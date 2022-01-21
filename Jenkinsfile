@@ -35,7 +35,8 @@ pipeline {
                        -Dsonar.java.binaries=./target/classes/com/ss/training/utopia/auth
                     """
                 }
-                timeout(time: 1, unit: 'HOURS') {
+                timeout(time: 15, unit: 'MINUTES') {
+                sleep(10)
                     waitForQualityGate abortPipeline: true
                 }
             }

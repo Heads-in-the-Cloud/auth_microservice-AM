@@ -47,7 +47,6 @@ public class DbInit implements CommandLineRunner {
         // ensure admin user exists
         if (!dao.existsByEmail("admin@foo.bar")) {
             User adminCreate = User.builder()
-                .active(true)
                 .email("admin@foo.bar")
                 .familyName("bar")
                 .givenName("foo")
