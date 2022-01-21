@@ -27,7 +27,7 @@ pipeline {
             steps {
                 echo 'Running SonarQube Quality Analysis'
                 withSonarQubeEnv('SonarQube') {
-                    def sonarRunner = tool name: 'SonarQubeScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                    def sonarRunner = tool name: 'SonarQubeScanner'
                     sh """
                        ${sonarRunner}/bin/sonar-scanner \
                        -Dsonar.projectKey=AM-auth-api \
