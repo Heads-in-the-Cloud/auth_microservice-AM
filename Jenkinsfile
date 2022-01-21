@@ -6,7 +6,7 @@ pipeline {
         aws_region = "${sh(script:'aws configure get region', returnStdout: true).trim()}"
         aws_ecr_repo = "${sh(script:'aws sts get-caller-identity --query "Account" --output text', returnStdout: true).trim()}"
         repo_name = 'am-auth-api'
-        jar_name = 'utopia-0.0.1-SNAPSHOT.jar'
+        jar_name = 'auth-0.0.1-SNAPSHOT.jar'
     }
 
     stages {
