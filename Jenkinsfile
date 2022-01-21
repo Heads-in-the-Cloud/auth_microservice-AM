@@ -35,10 +35,12 @@ pipeline {
                        -Dsonar.java.binaries=./target/classes/com/ss/training/utopia/auth
                     """
                 }
+                timeout(time: 1, unit: 'HOURS') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
         stage('Build') {
-            def gate = waitForQualityGate()
             steps {
                 echo 'Building Docker Image'
                 sh 'docker build --build-arg jar_name=${jar_name} -t ${repo_name} .'
