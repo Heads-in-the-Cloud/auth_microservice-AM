@@ -41,7 +41,6 @@ public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
         try {
             credentials = new ObjectMapper().readValue(request.getInputStream(), LoginDto.class);
         } catch (IOException e) {
-            e.printStackTrace();
             return null;
         }
 
