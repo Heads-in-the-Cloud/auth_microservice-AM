@@ -65,5 +65,13 @@ pipeline {
                 sh 'docker rmi ${aws_ecr_repo}.dkr.ecr.us-west-2.amazonaws.com/${repo_name}:${commit}'
             }
         }
+        stage('ECS Update') {
+            steps {
+                echo 'Attempting to update ECS Deployment data'
+                dir("${AM_RESOURCES_DIRECTORY}") {
+                    sh 'jq -M --arg commit "${commit}" \'.auth=$commit\' images.json > tmp.$$.json && mv tmp.$$.json images.json'
+                }
+            }
+        }
     }
 }
