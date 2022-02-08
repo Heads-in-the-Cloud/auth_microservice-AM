@@ -65,8 +65,8 @@ pipeline {
             steps {
                 echo 'Removing images'
                 sh 'docker rmi ${API_REPO_NAME}:latest'
-                sh 'docker rmi ${AWS_ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com/${API_REPO_NAME}:latest'
-                sh 'docker rmi ${AWS_ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com/${API_REPO_NAME}:${COMMIT_HASH}'
+                sh 'docker rmi ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_ID}.amazonaws.com/${API_REPO_NAME}:latest'
+                sh 'docker rmi ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_ID}.amazonaws.com/${API_REPO_NAME}:${COMMIT_HASH}'
             }
         }
 
@@ -74,7 +74,7 @@ pipeline {
             steps {
                 echo 'Attempting to update ECS Deployment data'
                 dir("${AM_RESOURCES_DIRECTORY}") {
-                    sh 'jq -M --arg commit "${COMMIT_HASH}" \'.auth=$commit\' images.json > tmp.$$.json && mv tmp.$$.json images.json'
+                    sh 'jq -M --arg commit "${COMMIT_HASH}" \'.auth=$commit\' images-${AWS_REGION_ID}.json > tmp.$$.json && mv tmp.$$.json images-${AWS_REGION_ID}.json'
                 }
             }
         }
