@@ -43,7 +43,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
             // authorize
             .authorizeRequests()
-            .antMatchers("/status").permitAll()
+            .antMatchers("/api/v1/login/ready").permitAll()
             .antMatchers("/login").permitAll();
     }
 
