@@ -10,15 +10,40 @@ pipeline {
 
         // AWS Specific
         AWS_PROFILE     = "${AWS_PROFILE_NAME}"
-        SECRET_ID_PUSH  = "${AM_SECRET_ID_PUSH}"
+        DEPLOY_MODE     = "${AM_DEPLOY_ENVIRONMENT}"
+
+        // Secrets Manager
+        SECRET_PUSHES   = credentials("AM_SECRETS_PUSH_JSON")
+        SECRET_PULL     = sh(returnStdout: true, script: "echo '${SECRET_PUSHES}' | jq '.DEV' | tr -d '\\n\"'")
+        SECRET_BASE     = credentials("AM_SECRET_ID_BASE")
+        SECRET_ID       = "${DEPLOY_MODE}/${SECRET_BASE}"
+        SECRET_ID_PUSH  = "${SECRET_ID}-${SECRET_PULL}"
+
+        // Artifact Information
+        CUR_REPO_TYPE   = "${AM_CURRENT_REPO_TYPE}"
+        ART_REPO_NAME   = credentials("AM_ARTIFACTORY_ENDPOINT")
+        ART_REPO_LOGIN  = credentials("AM_ARTIFACTORY_LOGIN")
+
+        // Repositories
+        ECR_REPO_LOC    = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_ID}.amazonaws.com/${API_REPO_NAME}"
+        ART_REPO_LOC    = "${ART_REPO_NAME}/am-utopia/${API_REPO_NAME}"
+        CUR_REPO_LOC    = getRepoLoc(CUR_REPO_TYPE, ECR_REPO_LOC, ART_REPO_LOC)
     }
 
     stages {
-
-        stage('AWS Setup') {
+        stage('ECR Login') {
+            when { expression { CUR_REPO_TYPE == 'ECR' } }
             steps {
                 echo 'logging in via AWS client'
                 sh 'aws ecr get-login-password --region ${AWS_REGION_ID} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_ID}.amazonaws.com'
+            }
+        }
+
+        stage('Artifactory Login') {
+            when { expression { CUR_REPO_TYPE == 'ART' } }
+            steps {
+                echo 'logging in via docker login'
+                sh 'echo ${ART_REPO_LOGIN_PSW} | docker login ${ART_REPO_NAME} --username ${ART_REPO_LOGIN_USR} --password-stdin'
             }
         }
 
@@ -30,7 +55,7 @@ pipeline {
             }
         }
 
-        stage('SonarQube Scan') {
+        stage('SonarQube Quality Gate') {
             steps {
                 echo 'Running SonarQube Quality Analysis'
                 withSonarQubeEnv('SonarQube') {
@@ -48,7 +73,7 @@ pipeline {
             }
         }
 
-        stage('Build Image') {
+        stage('Build Project') {
             steps {
                 echo 'Building Docker Image'
                 sh 'docker build --build-arg jar_name=${JARFILE_NAME} -t ${API_REPO_NAME} .'
@@ -58,24 +83,24 @@ pipeline {
         stage('Push Images') {
             steps {
                 echo 'Tagging images'
-                sh 'docker tag ${API_REPO_NAME}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_ID}.amazonaws.com/${API_REPO_NAME}:latest'
-                sh 'docker tag ${API_REPO_NAME}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_ID}.amazonaws.com/${API_REPO_NAME}:${COMMIT_HASH}'
+                sh 'docker tag ${API_REPO_NAME}:latest ${CUR_REPO_LOC}:latest'
+                sh 'docker tag ${API_REPO_NAME}:latest ${CUR_REPO_LOC}:${COMMIT_HASH}'
                 echo 'Pushing images'
-                sh 'docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_ID}.amazonaws.com/${API_REPO_NAME}:latest'
-                sh 'docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_ID}.amazonaws.com/${API_REPO_NAME}:${COMMIT_HASH}'
+                sh 'docker push ${CUR_REPO_LOC}:latest'
+                sh 'docker push ${CUR_REPO_LOC}:${COMMIT_HASH}'
             }
         }
 
-        stage('Clean up Images') {
+        stage('Clean Images') {
             steps {
                 echo 'Removing images'
                 sh 'docker rmi ${API_REPO_NAME}:latest'
-                sh 'docker rmi ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_ID}.amazonaws.com/${API_REPO_NAME}:latest'
-                sh 'docker rmi ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_ID}.amazonaws.com/${API_REPO_NAME}:${COMMIT_HASH}'
+                sh 'docker rmi ${CUR_REPO_LOC}:latest'
+                sh 'docker rmi ${CUR_REPO_LOC}:${COMMIT_HASH}'
             }
         }
 
-        stage('EKS Update') {
+        stage('Update Secrets') {
             steps {
                 echo 'Configuring Profile and Region'
                 sh 'aws configure set region ${AWS_REGION_ID} --profile ${AWS_PROFILE_NAME}'
@@ -83,7 +108,7 @@ pipeline {
                 echo 'Writing output to Secrets'
                 script {
                     // get secret
-                    secret = sh(returnStdout: true, script: 'aws secretsmanager get-secret-value --secret-id ${AM_SECRET_ID} | jq -Mr \'.SecretString\'').trim()
+                    secret = sh(returnStdout: true, script: 'aws secretsmanager get-secret-value --secret-id ${SECRET_ID} | jq -Mr \'.SecretString\'').trim()
                     def jsonObj = readJSON text: secret
 
                     // update secret
@@ -97,5 +122,14 @@ pipeline {
         }
 
         // end stages
+    }
+}
+
+// Decide which repo to use based on current type; default to ECR
+def getRepoLoc(repoType, ecrLoc, artLoc) {
+    if(repoType == "ART") {
+        return artLoc
+    } else {
+        return ecrLoc
     }
 }
