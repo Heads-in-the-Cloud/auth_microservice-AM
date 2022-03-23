@@ -14,7 +14,7 @@ pipeline {
 
         // Secrets Manager
         SECRET_PUSHES   = credentials("AM_SECRETS_PUSH_JSON")
-        SECRET_PULL     = sh(returnStdout: true, script: "echo '${SECRET_PUSHES}' | jq '.DEV' | tr -d '\\n\"'")
+        SECRET_PULL     = sh(returnStdout: true, script: "echo '${SECRET_PUSHES}' | jq '.${DEPLOY_MODE.toUpperCase()' | tr -d '\\n\"'")
         SECRET_BASE     = credentials("AM_SECRET_ID_BASE")
         SECRET_ID       = "${DEPLOY_MODE}/${SECRET_BASE}"
         SECRET_ID_PUSH  = "${SECRET_ID}-${SECRET_PULL}"
